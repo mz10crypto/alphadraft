@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -10,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Zap, ArrowRight, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 
-export default function JoinPage() {
+function JoinForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const prefillLicense = searchParams.get('license') || ''
@@ -148,4 +149,16 @@ export default function JoinPage() {
       </div>
     </div>
   )
-} 
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="text-zinc-500">Loading...</div>
+      </div>
+    }>
+      <JoinForm />
+    </Suspense>
+  )
+}
