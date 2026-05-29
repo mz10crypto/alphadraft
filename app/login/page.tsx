@@ -5,32 +5,62 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Zap, Code2 } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Zap } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const router = useRouter()
   const supabase = createClient()
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    if (mode === 'login') {
-      await supabase.auth.signInWithPassword({ email, password })
-    } else {
-      await supabase.auth.signUp({ email, password })
-    }
-    setIsLoading(false)
-  }
+    setError('')
 
-  const handleGithub = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: { redirectTo: `${location.origin}/auth/callback` }
-    })
+    try {
+      if (mode === 'signup') {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
+        })
+
+        if (signUpError) throw signUpError
+
+        // Auto-login after signup
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (signInError) throw signInError
+
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (signInError) throw signInError
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+
+    } catch (err: any) {
+      setError(err.message || 'An error occurred')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -41,42 +71,78 @@ export default function LoginPage() {
             <Zap className="h-8 w-8 text-amber-400" />
             <span className="text-2xl font-bold">AlphaDraft</span>
           </Link>
-          <h2 className="text-2xl font-bold">{mode === 'login' ? 'Welcome back' : 'Create account'}</h2>
-          <p className="text-zinc-400 mt-2">Enter your credentials to access your workspace.</p>
+          <h2 className="text-2xl font-bold">
+            {mode === 'login' ? 'Welcome back' : 'Create account'}
+          </h2>
+          <p className="text-zinc-400 mt-2">
+            {mode === 'login' ? 'Sign in to your account' : 'Start your trading journey'}
+          </p>
         </div>
 
-        <form onSubmit={handleEmailAuth} className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com" className="mt-1 bg-zinc-900 border-zinc-800" required />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••" className="mt-1 bg-zinc-900 border-zinc-800" required />
-          </div>
-          <Button type="submit" className="w-full bg-amber-400 text-zinc-950 hover:bg-amber-300" disabled={isLoading}>
-            {isLoading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Create Account'}
-          </Button>
-        </form>
+        <Card className="bg-zinc-900/50 border-zinc-800">
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  className="mt-1 bg-zinc-900 border-zinc-800"
+                />
+              </div>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-800" /></div>
-          <div className="relative flex justify-center text-sm"><span className="bg-zinc-950 px-2 text-zinc-500">Or continue with</span></div>
-        </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                  className="mt-1 bg-zinc-900 border-zinc-800"
+                />
+              </div>
 
-        <Button variant="outline" className="w-full" onClick={handleGithub}>
-          <Code2 className="mr-2 h-4 w-4" /> GitHub
-        </Button>
+              {error && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
 
-        <p className="text-center text-sm text-zinc-500">
-          {mode === 'login' ? (
-            <>Don't have an account? <button onClick={() => setMode('signup')} className="text-amber-400 hover:underline">Sign up</button></>
-          ) : (
-            <>Already have an account? <button onClick={() => setMode('login')} className="text-amber-400 hover:underline">Sign in</button></>
-          )}
-        </p>
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                className="w-full bg-amber-400 text-zinc-950 hover:bg-amber-300"
+              >
+                {isLoading ? 'Loading...' : mode === 'login' ? 'Sign in' : 'Sign up'}
+              </Button>
+            </form>
+
+            <p className="text-center text-sm text-zinc-500 mt-4">
+              {mode === 'login' ? (
+                <>
+                  Don't have an account?{' '}
+                  <button onClick={() => setMode('signup')} className="text-amber-400 hover:underline">
+                    Sign up
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <button onClick={() => setMode('login')} className="text-amber-400 hover:underline">
+                    Sign in
+                  </button>
+                </>
+              )}
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
