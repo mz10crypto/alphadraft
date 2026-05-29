@@ -63,8 +63,23 @@ export default function MentorDashboardPage() {
         <h1 className="text-3xl font-bold mb-4">Become a Mentor</h1>
         <p className="text-zinc-400 mb-6">Set up your trading signal service on AlphaDraft.</p>
         <Card className="bg-zinc-900/30 border-zinc-800">
-          <CardContent className="p-6">
-            <p className="text-sm text-zinc-400">Contact admin to activate mentor account.</p>
+          <CardContent className="p-6 space-y-4">
+            <p className="text-sm text-zinc-400">
+              Apply to become a mentor and start earning from your trading strategies. 
+              Share your EA with clients and earn commission on every subscription.
+            </p>
+            <div className="flex gap-3">
+              <a href="/become-mentor">
+                <Button className="bg-amber-400 text-zinc-950 hover:bg-amber-300">
+                  Apply Now
+                </Button>
+              </a>
+              <a href="/admin">
+                <Button variant="outline">
+                  Admin Panel
+                </Button>
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>

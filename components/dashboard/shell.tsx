@@ -20,6 +20,7 @@ const navItems = [
   { href: '/strategies', label: 'AI Strategies', icon: Sparkles },
   { href: '/client', label: 'Copy Trading', icon: Target },
   { href: '/mentor', label: 'Mentor Hub', icon: Users },
+  { href: '/admin', label: 'Admin', icon: Shield },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
