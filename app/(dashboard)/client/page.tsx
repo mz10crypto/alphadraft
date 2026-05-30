@@ -49,7 +49,7 @@ export default function ClientDashboardPage() {
     const { data: sub } = await supabase
       .from('client_subscriptions')
       .select('*, mentors(*)')
-      .eq('client_id', user.id)
+      .eq('id', subscription.id)
       .single()
 
     if (sub) {
@@ -277,13 +277,28 @@ export default function ClientDashboardPage() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="lots">My Lot Size</Label>
-              <Input id="lots" type="number" step="0.01" value={lotSize} onChange={(e) => setLotSize(e.target.value)}
-                className="mt-1 bg-zinc-900 border-zinc-800" />
-              <p className="text-xs text-zinc-500 mt-1">Mentor trades: {mentorPairs[0]?.default_lots || 0.05} lots</p>
-            </div>
+                 <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="lots">
+                    {riskMode === 'fixed_lot' ? 'My Lot Size' : 
+                     riskMode === 'fixed_percent' ? 'Risk % of Equity' : 
+                     'Mentor Lot Size'}
+                  </Label>
+                  <Input 
+                    id="lots" 
+                    type="number" 
+                    step={riskMode === 'fixed_percent' ? '0.1' : '0.01'} 
+                    value={riskMode === 'mirror' ? (mentorPairs[0]?.default_lots || 0.05) : lotSize} 
+                    onChange={(e) => setLotSize(e.target.value)}
+                    disabled={riskMode === 'mirror'}
+                    className="mt-1 bg-zinc-900 border-zinc-800" 
+                  />
+                  <p className="text-xs text-zinc-500 mt-1">
+                    {riskMode === 'fixed_lot' ? `Mentor trades: ${mentorPairs[0]?.default_lots || 0.05} lots` :
+                     riskMode === 'fixed_percent' ? 'Percentage of account equity per trade' :
+                     'Uses same lot size as mentor'}
+                  </p>
+                </div>
             <div>
               <Label htmlFor="max">Trades Per Signal</Label>
               <Input id="max" type="number" min="1" max="10" value={maxTrades} onChange={(e) => setMaxTrades(e.target.value)}

@@ -19,6 +19,10 @@ export default function MentorDashboardPage() {
 
   useEffect(() => {
     loadMentorData()
+    const interval = setInterval(() => {
+      loadMentorData()
+    }, 10000)
+    return () => clearInterval(interval)
   }, [])
 
   const loadMentorData = async () => {
