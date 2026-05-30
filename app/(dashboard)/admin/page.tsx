@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { 
   Shield, Users, CheckCircle2, XCircle, Clock, 
-  Search, Filter, ArrowLeft
+  Search, ArrowLeft
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -88,7 +88,6 @@ export default function AdminDashboardPage() {
       return
     }
 
-    // Create mentor record
     const { error: mentorError } = await supabase.from('mentors').insert({
       id: app.user_id,
       display_name: app.full_name,
@@ -105,7 +104,6 @@ export default function AdminDashboardPage() {
       return
     }
 
-    // Add their expected pairs
     if (app.expected_pairs && app.expected_pairs.length > 0) {
       const pairs = app.expected_pairs.map(symbol => ({
         mentor_id: app.user_id,
@@ -115,13 +113,11 @@ export default function AdminDashboardPage() {
       await supabase.from('mentor_pairs').insert(pairs)
     }
 
-    // Update application status
     await supabase
       .from('mentor_applications')
       .update({ status: 'approved', reviewed_at: new Date().toISOString() })
       .eq('id', app.id)
 
-    // Update profile
     await supabase.from('profiles').update({ trading_experience: app.trading_experience }).eq('id', app.user_id)
 
     setLicenseKey('')
@@ -173,7 +169,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -184,7 +179,6 @@ export default function AdminDashboardPage() {
         <Badge className="bg-amber-400/10 text-amber-400 border-amber-400/30">ADMIN</Badge>
       </div>
 
-      {/* Stats */}
       <div className="grid md:grid-cols-4 gap-4">
         <Card className="bg-zinc-900/50 border-zinc-800">
           <CardContent className="p-4">
@@ -218,7 +212,6 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Applications Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Mentor Applications</h2>
@@ -308,7 +301,6 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      {/* Active Mentors */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Active Mentors</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -345,7 +337,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Approve Modal */}
       {selectedApp && selectedApp.status === 'pending' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md bg-zinc-900 border-zinc-800">
@@ -405,7 +396,6 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Reject Modal */}
       {selectedApp && selectedApp.status === 'rejected' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md bg-zinc-900 border-zinc-800">
@@ -444,4 +434,4 @@ export default function AdminDashboardPage() {
       )}
     </div>
   )
-} 
+}
