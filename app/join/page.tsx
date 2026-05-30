@@ -14,8 +14,8 @@ import Link from 'next/link'
 function JoinForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const prefillLicense = searchParams.get('license') || ''
-  
+  const prefillLicense = (searchParams.get('license') || '').toUpperCase()
+
   const [licenseKey, setLicenseKey] = useState(prefillLicense)
   const [isJoining, setIsJoining] = useState(false)
   const [error, setError] = useState('')
@@ -24,7 +24,7 @@ function JoinForm() {
 
   const handleJoin = async () => {
     if (!licenseKey.trim()) return
-    
+
     setIsJoining(true)
     setError('')
 
@@ -35,14 +35,34 @@ function JoinForm() {
         return
       }
 
-      const { data: mentor, error: mentorError } = await supabase
+      // Try exact match first
+      let mentorQuery = await supabase
         .from('mentors')
         .select('*')
         .eq('license_key', licenseKey)
         .single()
 
+      let mentor = mentorQuery.data
+      let mentorError = mentorQuery.error
+
+      // If exact fails, try case-insensitive
       if (mentorError || !mentor) {
-        throw new Error('Invalid license key')
+        console.log('Exact match failed, trying case-insensitive...')
+        const ciQuery = await supabase
+          .from('mentors')
+          .select('*')
+          .ilike('license_key', licenseKey)
+          .single()
+        
+        if (ciQuery.data && !ciQuery.error) {
+          mentor = ciQuery.data
+          mentorError = null
+        }
+      }
+
+      if (mentorError || !mentor) {
+        console.error('Mentor lookup error:', mentorError)
+        throw new Error('Invalid license key: ' + licenseKey)
       }
 
       if (!mentor.is_active) {
@@ -51,6 +71,18 @@ function JoinForm() {
 
       if (mentor.current_clients >= mentor.max_clients) {
         throw new Error('This mentor has reached their client limit')
+      }
+
+      // Check if already subscribed
+      const { data: existingSub } = await supabase
+        .from('client_subscriptions')
+        .select('*')
+        .eq('client_id', user.id)
+        .eq('mentor_id', mentor.id)
+        .single()
+
+      if (existingSub) {
+        throw new Error('You are already subscribed to this mentor')
       }
 
       const { error: subError } = await supabase
@@ -63,21 +95,25 @@ function JoinForm() {
         })
 
       if (subError) {
-        if (subError.message.includes('duplicate')) {
-          throw new Error('You are already subscribed to this mentor')
-        }
-        throw subError
+        console.error('Subscription insert error:', subError)
+        throw new Error('Failed to create subscription: ' + subError.message)
       }
 
-      await supabase
+      // Update client count
+      const { error: updateError } = await supabase
         .from('mentors')
-        .update({ current_clients: mentor.current_clients + 1 })
+        .update({ current_clients: (mentor.current_clients || 0) + 1 })
         .eq('id', mentor.id)
+
+      if (updateError) {
+        console.error('Failed to update client count:', updateError)
+      }
 
       setSuccess(true)
 
     } catch (err: any) {
-      setError(err.message)
+      console.error('Join error:', err)
+      setError(err.message || 'An unexpected error occurred')
     } finally {
       setIsJoining(false)
     }
@@ -133,8 +169,8 @@ function JoinForm() {
               </div>
             )}
 
-            <Button 
-              onClick={handleJoin} 
+            <Button
+              onClick={handleJoin}
               disabled={isJoining || !licenseKey.trim()}
               className="w-full bg-amber-400 text-zinc-950 hover:bg-amber-300"
             >
